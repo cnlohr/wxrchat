@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<script src=wxrchat.js></script>
+<script>
+
+function WXLog( msg )
+{
+	console.log( msg );
+	document.getElementById( "chathistory" ).innerHTML =
+		msg + "<BR>" + document.getElementById( "chathistory" ).innerHTML;	
+}
+
+var rc_global = null;
+
+function OnChatMessageKey( e )
+{
+	if( e.keyCode == 13|0 )
+	{
+		let text = e.target.value;
+		e.target.value = "";
+		WXLog( "You: " + text );
+		
+		
+		if( rc_global != null )
+		{
+			rc_global.dc.send( text );
+		}
+	}
+}
+
+function AcceptSDPConnection()
+{
+	console.log( "Accept " + rc_global + " " + document.getElementById( "remoteval_answer" ).value );
+	if( rc_global != null )
+	{
+		rc_global.setRemoteDescription( JSON.parse( document.getElementById( "remoteval_answer" ).value ) );
+	}
+}
+
+function CreateNewSDP()
+{
+	WXRAddLocal( (lc, sdp) => {
+		const rv = document.getElementById( "remoteval");
+		rv.disabled = false;
+		rv.value = sdp;
+		rv.focus();
+		rv.select();
+		rv.setSelectionRange(0, 99999);
+		navigator.clipboard.writeText(rv.value);
+		rv.disabled = true;
+		rc_global = lc;
+		console.log( "Setting RC: " + lc );
+		const av = document.getElementById( "remoteval_answer" );
+		av.value = "";
+		av.focus();
+	} );
+}
+
+function JoinSDP()
+{
+	WXRAddRemote( document.getElementById( "getsdp" ).value, ( rc, sdp_answer ) => {
+		const rv = document.getElementById( "getsdp_answer");
+		rv.disabled = false;
+		rv.value = sdp_answer;
+		rv.focus();
+		rv.select();
+		rv.setSelectionRange(0, 99999);
+		navigator.clipboard.writeText(rv.value);
+		rv.disabled = true;
+		rc_global = rc;
+		console.log( "Setting RC: " + rc );
+	} );
+}
+
+</script>
+<title>wxrchat test</title>
+</head>
+<body>
+
+<table>
+<tr>
+	<td><input type=submit value="Create SDP" onclick="CreateNewSDP()"></td>
+	<td><input type=text id=remoteval readonly disabled"></td>
+	<td><input type=text id=remoteval_answer></td>
+	<td><input type=submit value="Connect" onclick="AcceptSDPConnection()"></td>
+	<td>
+</tr>
+<tr>
+	<td><input type=submit value="Join SDP" onclick="JoinSDP()"></td>
+	<td><input type=text id=getsdp></td>
+	<td><input type=text id=getsdp_answer readonly disabled"></td>
+</tr>
+</table>
+
+<input type=text id=chatinput onkeydown="OnChatMessageKey(event);">
+<div id=chathistory>
+</div>
+
+</body>
+</html> 

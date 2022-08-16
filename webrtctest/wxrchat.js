@@ -7,7 +7,7 @@ function WXRAddLocal( callback )
 	// This is the originator.
 	console.log( "AddLocal" );
 	
-	const lc = new RTCPeerConnection();
+	const lc = new RTCPeerConnection( { iceServers: [ { urls: "stun:stun.l.google.com:19302" } ] });
 	const dc = lc.createDataChannel("wxrchat");
 	dc.onmessage = e => WXLog("Got a message " + e.data);
 	dc.onopen = e => WXLog("Connection opened " + e );
@@ -24,7 +24,8 @@ function WXRAddRemote( sdp, callback )
 	console.log( "AddRemote" );
 	console.log( sdp );
 	
-	const rc = new RTCPeerConnection();
+	const rc = new RTCPeerConnection( {iceServers: [ { urls: "stun:stun.l.google.com:19302" } ] });
+	
 	rc.onicecandidate = e => {
 		console.log( rc.localDescription );
 		callback( rc, JSON.stringify( rc.localDescription ) );

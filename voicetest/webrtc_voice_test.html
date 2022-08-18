@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+	<!-- from @BlockBuilder57
+
+A1. Copy "your SDPs" and give it to the other side
+    B1. Enter the given SDP into "their SDPs"
+A2. Copy "your candidate" and give it to the other side
+    B2. Enter the given candidate into "their candidate"
+    B3. Press "do it", 1 way connection started
+    B4. B's SDPs/candidate is now updated to an answer
+    B5. Copy "your SDPs" and give it to the other side
+A3. Enter the given SDP into "their SDPs"
+    B6. Copy "your candidate" and give it to the other side
+A4. Enter the given candidate into "their candidate"
+A5. Press "do it", two way established
+
+	-->
+	<title>webrtc voice chat testing</title>
+	<body>
+		your SDPs: <input type="text" size=120 id="textLocalSDP"><br>
+		your candidate: <input type="text" size=120 id="textLocalCandidate"><br>
+		their SDPs: <input type="text" size=120 id="textRemoteSDP"> <input type="button" id="requestButton" value="do it"><br>
+		their candidate: <input type="text" size=120 id="textRemoteCandidate"><br>
+		<br>
+		your audio:<br>
+		<audio id="localAudio" controls autoplay volume="0.1"></audio><br>
+		other audio:<br>
+		<div id="remoteAudioDiv"></div><br>
+		<div id="debug"></div>
+	</body>
+
+	<script>
+		$ = (x) => document.querySelector(x);
+		$$ = (x) => document.querySelectorAll(x);
+
+		console.log("hacked up mostly from this thing: https://www.tutorialspoint.com/webrtc/webrtc_voice_demo.htm");
+
+		var textLocalSDP = $('#textLocalSDP');
+		var textLocalCandidate = $('#textLocalCandidate');
+		var textRemoteCandidate = $('#textRemoteCandidate');
+		var textRemoteSDP = $('#textRemoteSDP');
+		var requestButton = $('#requestButton');
+		
+		var localAudio = $('#localAudio'); 
+		var remoteAudioDiv = $('#remoteAudioDiv'); 
+
+		var yourConn;
+		var localStream;
+
+		document.addEventListener("DOMContentLoaded", function () {
+			localAudio.volume = 0.075;
+		});
+
+		navigator.getUserMedia({ video: false, audio: true }, function (myStream) { 
+			localStream = myStream;
+			
+			console.log("stream is", localStream);
+
+			//displaying local audio stream on the page 
+			localAudio.srcObject = localStream;
+
+			//using Google public stun server 
+			var configuration = { 
+				"iceServers": [{ "url": "stun:stun2.1.google.com:19302" }] 
+			}; 
+
+			yourConn = new RTCPeerConnection(configuration); 
+
+			// setup stream listening 
+			yourConn.addTrack(localStream.getAudioTracks()[0], localStream);
+			//yourConn.addStream(localStream);
+
+			//when a remote user adds stream to the peer connection, we display it 
+			yourConn.onstream = function (e) {
+				console.log("added remote stream:", e);
+
+				var newAudio = document.createElement("audio");
+				newAudio.srcObject = e.stream;
+				newAudio.autoplay = true;
+				newAudio.controls = true;
+				remoteAudioDiv.appendChild(newAudio);
+			}; 
+
+			yourConn.ontrack = function (e) {
+				console.log("added remote track:", e);
+
+				remoteAudioDiv.innerHTML = "";
+
+				e.streams.forEach((x) => {
+					var newAudio = document.createElement("audio");
+					newAudio.srcObject = x;
+					newAudio.autoplay = true;
+					newAudio.controls = true;
+					remoteAudioDiv.appendChild(newAudio);
+				});
+			}; 
+
+			yourConn.onremovestream = function (e) {
+				console.log("removed remote stream:", e);
+
+				if ($(e.stream.id) != null)
+					$(e.stream.id).remove();
+			}; 
+
+			// Setup ice handling 
+			yourConn.onicecandidate = function (event) { 
+				if (event.candidate) { 
+					console.log("New ICE candidate:", event.candidate);
+					textLocalCandidate.value = JSON.stringify(event.candidate.toJSON());
+				} 
+			}; 
+
+			yourConn.connectionstatechange = function (event) { 
+				console.log("STATE CHANGE!!", yourConn.connectionState);
+			}; 
+
+			// create our offer
+			yourConn.createOffer(function (offer) {
+				console.log("Our offer!!\n\n", offer);
+				yourConn.setLocalDescription(offer); 
+				
+				textLocalSDP.value = JSON.stringify(offer);
+			}, function (error) { 
+				alert("Error when creating an offer"); 
+			}); 
+
+		}, function (error) { 
+			console.log(error); 
+		});
+
+		requestButton.addEventListener("click", function (event) { 
+			// try to connect to our friend
+			var jsoned = JSON.parse(textRemoteSDP.value);
+
+			if (jsoned.type === "offer") {
+				console.log("Got an offer!!\n\n", jsoned);
+
+				yourConn.setRemoteDescription(new RTCSessionDescription(jsoned)); 
+				yourConn.addIceCandidate(new RTCIceCandidate(JSON.parse(textRemoteCandidate.value))); 
+	
+				//create an answer to an offer 
+				yourConn.createAnswer(function (answer) { 
+					console.log("My honest answer:", answer);
+					yourConn.setLocalDescription(answer);
+
+					textLocalSDP.value = JSON.stringify(answer);
+
+					textRemoteSDP.value = "";
+					textRemoteCandidate.value = "";
+				}, function (error) { 
+					alert("Error when creating an answer"); 
+				}); 
+			} else if (jsoned.type === "answer") {
+				console.log("Remote has joined!!\n\n", jsoned);
+
+				yourConn.setRemoteDescription(new RTCSessionDescription(jsoned));
+				yourConn.addIceCandidate(new RTCIceCandidate(JSON.parse(textRemoteCandidate.value))); 
+			}
+
+			
+		});
+	</script>
+</html>

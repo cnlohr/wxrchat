@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<script>
+
+function CheckConn()
+{
+	let socket = new WebSocket("ws://localhost:8888/d/ws/nvp");
+	socket.onopen = (e) => console.log( e );
+	socket.onmessage = (event) => console.log(`[message] Data received from server: ${event.data}`);
+	socket.onclose = (event) => console.log( event );
+	socket.onerror = (error) => console.log( error );
+}
+
+</script>
+</head>
+<body>
+
+<INPUT type=submit onclick=CheckConn()>
+
+</body>
+</html>

@@ -491,7 +491,10 @@ int TCPCanSend( int socket, int size );
 int TCPDoneSend( int socket );
 int EndTCPWrite( int socket );
 
+#ifndef HTTP_CONNECTIONS
 #define HTTP_CONNECTIONS 50
+#endif
+
 #ifndef MAX_HTTP_PATHLEN
 #define MAX_HTTP_PATHLEN 80
 #endif
@@ -624,7 +627,6 @@ void  HTTPGotData( )
 	while( curlen-- )
 	{
 		c = HTTPPOP;
-printf( "%c", c );
 	//	sendhex2( h->state ); sendchr( ' ' );
 
 		switch( curhttp->state )

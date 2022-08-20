@@ -1,0 +1,24 @@
+<HTML>
+<HEAD>
+<SCRIPT>
+
+function onload()
+{
+	const req = new XMLHttpRequest();
+	req.addEventListener("error", (e) => { console.log( e ); } );
+	req.addEventListener("loadstart", (e) => { console.log( e ); } );
+	req.addEventListener("loadend", (e) => { console.log( e ); } );
+	req.addEventListener("load", (e) => { console.log( e ); } );
+	req.addEventListener("progress", (e) => { console.log( e ); console.log( e.target.responseText ); } );
+//	req.responseType = "json";
+	req.open("GET", "http://localhost:8888/d/list?testx");
+	req.send();
+}
+
+</SCRIPT>
+
+
+<BODY onload=onload()>
+<DIV ID=bodytest>
+</BODY>
+</HTML>

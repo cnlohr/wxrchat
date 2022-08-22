@@ -248,7 +248,7 @@ void HTTPCustomStart( )
 
 int main()
 {
-	RunHTTP( 8888 );
+	RunHTTP( 8080 );
 
 	while( 1 )
 	{

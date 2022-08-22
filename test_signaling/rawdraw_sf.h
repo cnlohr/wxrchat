@@ -516,7 +516,7 @@ int EndTCPWrite( int socket );
 struct HTTPConnection
 {
 	uint8_t  state:4;
-	uint8_t  state_deets;
+	uint16_t  state_deets;
 
 	//Provides path, i.e. "/index.html" but, for websockets, the last 
 	//32 bytes of the buffer are used for the websockets key.  

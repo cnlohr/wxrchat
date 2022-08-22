@@ -45,17 +45,30 @@ function CreateNewSDP()
 		const rv = document.getElementById( "remoteval");
 		rv.disabled = false;
 		rv.value = sdp;
-		rv.focus();
-		rv.select();
-		rv.setSelectionRange(0, 99999);
-		navigator.clipboard.writeText(rv.value);
+		WRXCopyElementTextToClipboard( rv );
 		rv.disabled = true;
 		rc_global = lc;
 		console.log( "Setting RC: " + lc );
 		const av = document.getElementById( "remoteval_answer" );
 		av.value = "";
 		av.focus();
-	} );
+	}, false );
+}
+
+function CreateCode()
+{
+	WXRAddLocal( (lc, sdp) => {
+		const rv = document.getElementById( "codeuuid");
+		rv.disabled = false;
+		rv.value = sdp;
+		WRXCopyElementTextToClipboard( rv );
+		rv.disabled = true;
+		rc_global = lc;
+		console.log( "Setting RC: " + lc );
+		const av = document.getElementById( "remoteval_answer" );
+		av.value = "";
+		av.focus();
+	}, true );
 }
 
 function JoinSDP()
@@ -74,12 +87,36 @@ function JoinSDP()
 	} );
 }
 
+
+function OnLoadCode()
+{
+	let url = window.location.href;
+	let codesearch = "#uuidlink=";
+	let lp = url.indexOf( codesearch );
+	if( lp >= 0 )
+	{
+		let lpe = url.indexOf( "#", lp+1 );
+		let uuidlink = (lpe>0)?url.substr( lp+codesearch.length, lpe-lp-codesearch.length ):url.substr( lp+codesearch.length );
+		console.log( uuidlink );
+		
+	}
+}
+
 </script>
 <title>wxrchat test</title>
 </head>
-<body>
+<body onload=OnLoadCode()>
 
 <table>
+<tr>
+	<td>Easy Mode</td>
+</tr>
+<tr>
+		<td><input type=submit value="Create Code" onclick="CreateCode()"></td><td><input type=text id=codeuuid readonly disabled"></td>
+</tr>
+<tr>
+	<td>Hard Mode</td>
+</tr>
 <tr>
 	<td><input type=submit value="Create SDP" onclick="CreateNewSDP()"></td>
 	<td><input type=text id=remoteval readonly disabled"></td>

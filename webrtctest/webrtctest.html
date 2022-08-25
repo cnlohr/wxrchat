@@ -77,10 +77,7 @@ function JoinSDP()
 		const rv = document.getElementById( "getsdp_answer");
 		rv.disabled = false;
 		rv.value = sdp_answer;
-		rv.focus();
-		rv.select();
-		rv.setSelectionRange(0, 99999);
-		navigator.clipboard.writeText(rv.value);
+		WRXCopyElementTextToClipboard( rv );
 		rv.disabled = true;
 		rc_global = rc;
 		console.log( "Setting RC: " + rc );

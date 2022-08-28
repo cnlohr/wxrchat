@@ -1,10 +1,5 @@
 // WebRTC Code based on https://www.youtube.com/watch?v=FExZvpVvYxA
 
-if( typeof $ == typeof undefined ) $ = (x) => document.querySelector(x);
-if( typeof $$ == typeof undefined ) $$ = (x) => document.querySelectorAll(x);
-wipeChildren = (x) => { while(x.firstChild) x.removeChild(x.firstChild); }
-setOnlyChild = (x, child) => { while(x.firstChild) x.removeChild(x.firstChild); x.appendChild(child); }
-
 // Utility functions
 // Arraybuffer to base-64 string.  Note: The imparaitve version of this code can't be efficient
 // because javascript sematntics surrounding string manipulation require the strings to be appended.
@@ -39,15 +34,69 @@ profileCode = ( fn, iter ) => {
 	const end = performance.now();
 	return end-start;
 }
+if( typeof $ == typeof undefined ) $ = (x) => document.querySelector(x);
+if( typeof $$ == typeof undefined ) $$ = (x) => document.querySelectorAll(x);
+wipeChildren = (x) => { while(x.firstChild) x.removeChild(x.firstChild); }
+function setOnlyChild(x, child) {
+	if( x.firstChild && x.firstChild.isEqualNode( child ) ) return;
+	while(x.firstChild) x.removeChild(x.firstChild);
+	x.appendChild(child);
+}
+function setUpdateDom(x, child) {
+	let xlen = x.childNodes.length|0;
+	let clen = child.childNodes.length|0;
+	var i;
+	var xoff = 0;
+
+	if( xlen > clen )
+	{
+		for( i = 0; i < xlen-clen; i++ )
+			x.removeChild( x.childNodes[clen] );
+	}
+
+	for( var i = 0; i < clen; i++ )
+	{
+		if( i >= x.childNodes.length )
+		{
+			x.appendChild( child.childNodes[0] );
+		}
+		else
+		{
+			let hit = false;
+			if( child.childNodes[i-xoff] && x.childNodes[i] )
+				setUpdateDom( x.childNodes[i], child.childNodes[i-xoff] );
+
+			if( !x.childNodes[i].isEqualNode( child.childNodes[i-xoff] ) )
+			{
+				if( i < x.childNodes.length && i - xoff < child.childNodes.length )
+				{
+					//console.log( "replace", child.childNodes[i-xoff], x.childNodes[i] );
+					x.replaceChild( child.childNodes[i-xoff], x.childNodes[i] );
+					xoff++;
+					hit = true;
+				}
+			}
+			if( !hit )
+			{
+				child.removeChild( child.childNodes[i-xoff] );
+				xoff++;
+			}
+		}
+	}
+}
+
+
 
 
 
 (function(wxfrontend) {
 	'use strict';
 	wxfrontend.warn = ( e ) => console.log( e );
+	wxfrontend.guiRefreshTimeout = null;
+	wxfrontend.setRefresh = ( future ) => { var oldf = wxfrontend.guiRefreshTimeout?(wxfrontend.guiRefreshTimeout._idleStart + wxfrontend.guiRefreshTimeout._idleTimeout - Date.now()):NaN; if( !wxfrontend.guiRefreshTimeout || future < oldf || isNaN(oldf) ) { if( wxfrontend.guiRefreshTimeout ) { clearTimeout(wxfrontend.guiRefreshTimeout); } wxfrontend.guiRefreshTimeout = setTimeout( ()=>wxfrontend.tick(), future ); } }
 
 	wxfrontend.tick = () => {
-		let taint = false;
+		let taint = null;
 		if( wxfrontend.panelAJAXOpen > 0 )
 		{
 			const now = Date.now();
@@ -62,50 +111,68 @@ profileCode = ( fn, iter ) => {
 				newTd.appendChild( newDivInner );
 				newDivInner.innerHTML = (now - req.lastTouch) + " " + req.url + "  " + req.state;
 			});
-			setOnlyChild( $("#ajaxdetails"), newDivContent );
-			taint = true;
+			setUpdateDom( $("#ajaxdetails"), newDivContent );
+			wxfrontend.setRefresh( 200 );
 		}
 		$("#ajaxdetailsbutton").style.background = (wxci.trackedAJAX.size>0)?"green":"lightgray"; 
 
 		if( wxfrontend.panelIdentityOpen > 0 )
 		{
 			const newDiv = document.createElement("div");
-			const summary = document.createElement("div");
+			let summary = null;
 
 			if( !wxci.identityOk() )
 			{
-				summary.innerHTML = "Public/Private Key Invalid";
+				summary = document.createTextNode( "Public/Private Key Invalid" );
+				newDiv.appendChild(summary);
+				newDiv.appendChild(document.createElement("br"));
 			}
 			else
 			{
-				summary.innerHTML = "Public Key: " + arrayBufferToBase64( wxci.publicKey );
+				summary = document.createTextNode( "Public Key: " + arrayBufferToBase64( wxci.publicKey ) );
+				newDiv.appendChild(summary);
+				newDiv.appendChild(document.createElement("br"));
+				summary = document.createTextNode( "Screen Name: " + wxci.screenName );
+				newDiv.appendChild(summary);
+				newDiv.appendChild(document.createElement("br"));
 			}
 
-			newDiv.appendChild(summary); 
+
+			const newIdentityTxt = document.createElement("input");
+			newIdentityTxt.setAttribute( "type", "text" );
+			newIdentityTxt.id = "newidentitytext";
+			newIdentityTxt.alt = "Sceen Name";
+			newIdentityTxt.style.background = "white"; 
+			newIdentityTxt.addEventListener("keyup", wxfrontend.tick );
+			newDiv.appendChild(newIdentityTxt); 
 
 			const newIdentityBtn = document.createElement("input");
 			newIdentityBtn.setAttribute( "type", "submit" );
-			newIdentityBtn.value = "New Identity";
-			newIdentityBtn.addEventListener("click", (e) => { console.log(e ); wxci.newIdentity(); requestAnimationFrame( wxfrontend.tick ); return true; } );
-			newIdentityBtn.style.background = wxci.identityOk()?"lightgray":"green"; 
+			newIdentityBtn.value = "New Identity With Screen Name";
+			newIdentityBtn.addEventListener("click", (e) => { wxci.newIdentity($("#newidentitytext").value); $("#newidentitytext").value = ""; wxfrontend.tick(); return true; } );
+			newIdentityBtn.style.background = ($("#newidentitytext") && $("#newidentitytext").value.length)?"green":"darkgray"; 
+			newIdentityBtn.enabled = ($("#newidentitytext") && $("#newidentitytext").value.length); 
+			newDiv.appendChild(document.createElement("br"));
+			newDiv.appendChild(newIdentityBtn); 
 
-			if( wxci.identityOk() )
+			if( wxci.identityDifferent() )
 			{
 				const saveBtn = document.createElement("input");
 				saveBtn.setAttribute( "type", "submit" );
 				saveBtn.value = "Save";
-				saveBtn.addEventListener( "click", (e) => { console.log(e ); wxci.newIdentity(); requestAnimationFrame( wxfrontend.tick ); return true; } );
+				saveBtn.addEventListener( "click", (e) => { wxci.saveIdentity(); wxfrontend.tick(); return true; } );
+				saveBtn.style.background = "green";
+				newDiv.appendChild(document.createElement("br"));
+				newDiv.appendChild( saveBtn );
 			}
 
-			newDiv.appendChild(newIdentityBtn); 
-
-			setOnlyChild( $("#identitydetails"), newDiv );		
-			taint = true;
+			setUpdateDom( $("#identitydetails"), newDiv );
+			wxfrontend.setRefresh( 500 );
 		}
 
 		$("#identitydetailsbutton").style.background = wxci.identityOk()?"lightgray":"red"; 
 
-		if( taint ) requestAnimationFrame( wxfrontend.tick );
+		return true;
 	}
 
 	wxfrontend.panelAJAXOpen = false;
@@ -114,13 +181,13 @@ profileCode = ( fn, iter ) => {
 	wxfrontend.panelToggleAJAX = () => {
 		wxfrontend.panelAJAXOpen ^= true;
 		$("#ajaxdetails").style.display = (wxfrontend.panelAJAXOpen)?"block":"none";
-		requestAnimationFrame( wxfrontend.tick );
+		wxfrontend.tick();
 	}
 
 	wxfrontend.panelToggleIdentity = () => {
 		wxfrontend.panelIdentityOpen ^= true;
 		$("#identitydetails").style.display = (wxfrontend.panelIdentityOpen)?"block":"none";
-		requestAnimationFrame( wxfrontend.tick );
+		wxfrontend.tick();
 	}
 
 	requestAnimationFrame( wxfrontend.tick );
@@ -174,21 +241,32 @@ profileCode = ( fn, iter ) => {
 
 	wxci.privateKey = new Uint8Array(0);
 	wxci.publicKey = new Uint8Array(0);
-	wxci.identityOk = () => ( wxci.privateKey.byteLength == 32 && wxci.publicKey.byteLength == 32 ); 
+	wxci.screenName = "";
+
+	wxci.identityDifferent = () => {
+		let as__wxPrivateKey = arrayBufferToBase64( wxci.privateKey );
+		let as__wxPublicKey = arrayBufferToBase64( wxci.publicKey );
+		let as__wxScreenName = btoa( wxci.screenName );
+		return ( as__wxPrivateKey != localStorage.getItem( "__wxPrivateKey" ) || as__wxPublicKey != localStorage.getItem( "__wxPublicKey" ) || as__wxScreenName != localStorage.getItem("__wxScreenName" ) );
+	}
+
+	wxci.identityOk = () => ( wxci.privateKey.byteLength == 32 && wxci.publicKey.byteLength == 32 && wxci.screenName.length > 0 ); 
 
 	wxci.load = () => {
 		wxci.privateKey = base64ToArrayBuffer( localStorage.getItem( "__wxPrivateKey" ) );
 		wxci.publicKey = base64ToArrayBuffer( localStorage.getItem( "__wxPublicKey" ) );
+		wxci.screenName = atob( localStorage.getItem("__wxScreenName" ) )
 		if( wxci.privateKey.byteLength != 32 || wxci.publicKey.byteLength != 32 )
 		{
 			wxfrontend.warn( "Could load load public/private key pair.  You will need to generate a new identity." ); 
 		}
 	}
-	wxci.newIdentity = () => {
+	wxci.newIdentity = (newScreenName) => {
 		var randomValuesArray = new Uint8Array(32);
 		var pubpriv = axlsign.generateKeyPair( window.crypto.getRandomValues(randomValuesArray) );
 		wxci.privateKey = pubpriv.private;
 		wxci.publicKey = pubpriv.public;
+		wxci.screenName = newScreenName;
 	}
 	wxci.saveIdentity = () => {
 		if( !wxci.identityOk() )
@@ -199,6 +277,7 @@ profileCode = ( fn, iter ) => {
 		{
 			localStorage.setItem( "__wxPrivateKey", arrayBufferToBase64( wxci.privateKey ) );
 			localStorage.setItem( "__wxPublicKey", arrayBufferToBase64( wxci.publicKey ) );
+			localStorage.setItem( "__wxScreenName", btoa( wxci.screenName ) );
 		}
 	}
 

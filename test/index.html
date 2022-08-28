@@ -5,9 +5,9 @@
 <script src=axlsign.js></script>
 <script src=wxrchat.js></script>
 </head>
-<body>
+<body onload=wxci.load()>
 
-<div id=debugtable > <!--style="position:absolute;z-index:100">-->
+<div id=debugtable style="position:absolute;z-index:100">
 <table>
 <tr><td><input type=submit value="Identity" id=identitydetailsbutton onclick=wxfrontend.panelToggleIdentity()></td></tr><tr><td><div id=identitydetails></div></td></tr>
 <tr><td><input type=submit value="AJAX Requests" id=ajaxdetailsbutton onclick=wxfrontend.panelToggleAJAX()></td></tr><tr><td><div id=ajaxdetails></div></td></tr>

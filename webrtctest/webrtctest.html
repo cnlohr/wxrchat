@@ -80,7 +80,11 @@ function JoinSDP()
 		rv.focus();
 		rv.select();
 		rv.setSelectionRange(0, 99999);
-		navigator.clipboard.writeText(rv.value);
+		try {
+			navigator.clipboard.writeText(rv.value);
+		} catch (e) {
+			console.log( e );
+		}
 		rv.disabled = true;
 		rc_global = rc;
 		console.log( "Setting RC: " + rc );

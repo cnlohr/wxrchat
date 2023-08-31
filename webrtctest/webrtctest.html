@@ -111,16 +111,16 @@ function OnLoadCode()
 </head>
 <body onload=OnLoadCode()>
 
-<table>
-<tr>
+<!--<tr>
 	<td>Easy Mode</td>
 </tr>
 <tr>
 		<td><input type=submit value="Create Code" onclick="CreateCode()"></td><td><input type=text id=codeuuid readonly disabled"></td>
-</tr>
-<tr>
-	<td>Hard Mode</td>
-</tr>
+</tr>-->
+Connection Mechanism<br>
+
+Person 1 Does Create, SDP copied to clipboard. Send to other party.  Wait for other party, then connect.</td></tr>
+<table>
 <tr>
 	<td><input type=submit value="Create SDP" onclick="CreateNewSDP()"></td>
 	<td><input type=text id=remoteval readonly disabled"></td>
@@ -128,6 +128,9 @@ function OnLoadCode()
 	<td><input type=submit value="Connect" onclick="AcceptSDPConnection()"></td>
 	<td>
 </tr>
+<table>
+Person 2 does Join, pastes in SDP and returns SDP (automatically copied to clipboard)
+<table>
 <tr>
 	<td><input type=submit value="Join SDP" onclick="JoinSDP()"></td>
 	<td><input type=text id=getsdp></td>
@@ -135,7 +138,7 @@ function OnLoadCode()
 </tr>
 </table>
 
-<input type=text id=chatinput onkeydown="OnChatMessageKey(event);">
+Send Message: <input type=text id=chatinput onkeydown="OnChatMessageKey(event);">
 <div id=chathistory>
 </div>
 
